@@ -5,6 +5,7 @@ class TextCasePage extends StatelessWidget{
 
   @override
   Widget build(BuildContext context) {
+    final arg = (ModalRoute.of(context)?.settings.arguments??"Hello World") as String;
     return Scaffold(
       appBar: AppBar(
         title: const Text("TextCase"),
@@ -13,22 +14,22 @@ class TextCasePage extends StatelessWidget{
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Text(
-            "Hello world",
+          Text(
+            arg,
             textAlign: TextAlign.start,
           ),
           Text(
-            "Hello world" * 10,
+            arg * 10,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const Text(
-            "Hello world",
+          Text(
+            arg,
             textScaleFactor: 1.5,
           ),
-          const Text(
-            "Hello world",
-            style: TextStyle(
+          Text(
+            arg,
+            style: const TextStyle(
               color: Colors.blue,
               fontSize: 18.0,
               backgroundColor: Colors.amber,
