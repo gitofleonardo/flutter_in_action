@@ -11,6 +11,7 @@ import 'package:flutter_in_action/base/text.dart';
 import 'package:flutter_in_action/container/clip_page.dart';
 import 'package:flutter_in_action/container/container.dart';
 import 'package:flutter_in_action/container/decorated_box.dart';
+import 'package:flutter_in_action/dialogs.dart';
 import 'package:flutter_in_action/layout/align_layout.dart';
 import 'package:flutter_in_action/layout/column_and_row.dart';
 import 'package:flutter_in_action/layout/constrained_box.dart';
@@ -18,6 +19,12 @@ import 'package:flutter_in_action/layout/flex_layout.dart';
 import 'package:flutter_in_action/layout/layout_builder.dart';
 import 'package:flutter_in_action/layout/stack_layout.dart';
 import 'package:flutter_in_action/layout/wrap.dart';
+import 'package:flutter_in_action/page/base_widget_page.dart';
+import 'package:flutter_in_action/page/container_page.dart';
+import 'package:flutter_in_action/page/layout_widget_page.dart';
+import 'package:flutter_in_action/scrollable/animated_list_view.dart';
+import 'package:flutter_in_action/scrollable/grid_view.dart';
+import 'package:flutter_in_action/scrollable/list_view.dart';
 
 void main() {
   runApp(const MyApp());
@@ -31,13 +38,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'My Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const MyHomePage(title: 'Home'),
+      home: const MyHomePage(title: "Home"),
       routes: {
         "button_page": (context) => const ButtonPage(),
-        "check_box_page":(context) => const CheckBoxPage(),
+        "check_box_page": (context) => const CheckBoxPage(),
         "form_page": (context) => const FormPage(),
         "image_page": (context) => const ImagePage(),
         "indicator_page": (context) => const IndicatorPage(),
@@ -51,7 +55,11 @@ class MyApp extends StatelessWidget {
         "layout_builder_page": (ctx) => LayoutBuilderPage(),
         "decorated_box_page": (ctx) => const DecoratedBoxPage(),
         "container_page": (ctx) => const ContainerPage(),
-        "clip_page": (ctx) => ClipPage(),
+        "clip_page": (ctx) => const ClipPage(),
+        "list_view_page": (ctx) => const ListViewPage(),
+        "animated_list_view_page": (ctx) => const AnimatedListViewPage(),
+        "grid_view_page": (ctx) => const GridViewPage(),
+        "dialog_page": (ctx) => const Dialogs(),
       },
     );
   }
@@ -67,23 +75,24 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late final List<DisplayMode> _modes;
-  late final DisplayMode? _active;
-  late final DisplayMode? _preferred;
+  DateTime? _lastPress;
+  var _currentPageIndex = 0;
+  final _pageController = PageController();
+  final _pages = [
+    const BaseWidgetPage(),
+    const LayoutWidgetPage(),
+    const ContainerWidgetPage()
+  ];
+  final _optionalThemes = <ThemeData>[
+    ThemeData(primarySwatch: Colors.blue),
+    ThemeData(primarySwatch: Colors.deepOrange),
+    ThemeData(primarySwatch: Colors.teal)
+  ];
+  var _currThemeIndex = 0;
 
   Future<void> fetchAll() async {
-    try{
-      _modes = await FlutterDisplayMode.supported;
-      _modes.forEach(print);
-    }catch(e){
-      print(e);
-    }
-    _preferred = await FlutterDisplayMode.preferred;
-    _active = await FlutterDisplayMode.active;
     await FlutterDisplayMode.setHighRefreshRate();
-    setState(() {
-
-    });
+    setState(() {});
   }
 
   @override
@@ -93,101 +102,75 @@ class _MyHomePageState extends State<MyHomePage> {
     });
     super.initState();
   }
+
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(child: Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: SingleChildScrollView(
-        child: Container(
-          constraints: const BoxConstraints(minWidth: double.infinity),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.max,
-            children: <Widget>[
-              TextButton(
-                  child: const Text("TextCasePage"),
-                  onPressed: (){
-                    Navigator.pushNamed(context, "text_page",arguments: "Hello World And Thank You.");
-                  }),
-              TextButton(
-                  onPressed: (){
-                    Navigator.push(context, MaterialPageRoute(builder: (context){
-                      return const ButtonPage();
-                    }));
+    return Theme(
+      data: _optionalThemes[_currThemeIndex],
+      child: WillPopScope(
+          child: AnnotatedRegion<SystemUiOverlayStyle>(
+              child: Scaffold(
+                appBar: AppBar(
+                  title: Text(widget.title),
+                ),
+                body: Container(
+                  constraints: const BoxConstraints.expand(),
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: _pages.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      return _pages[index];
+                    },
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPageIndex = index;
+                      });
+                    },
+                  ),
+                ),
+                bottomNavigationBar: BottomNavigationBar(
+                  currentIndex: _currentPageIndex,
+                  items: const [
+                    BottomNavigationBarItem(
+                        icon: Icon(Icons.home), label: "Base"),
+                    BottomNavigationBarItem(
+                        icon: Icon(Icons.list), label: "Layout"),
+                    BottomNavigationBarItem(
+                        icon: Icon(Icons.all_inbox), label: "Container"),
+                  ],
+                  onTap: (index) {
+                    setState(() {
+                      _currentPageIndex = index;
+                      _pageController.animateToPage(index,
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.decelerate);
+                    });
                   },
-                  child: const Text("ButtonPage")
+                ),
+                floatingActionButton: FloatingActionButton(
+                  onPressed: () {
+                    setState(() {
+                      _currThemeIndex =
+                          (_currThemeIndex + 1) % _optionalThemes.length;
+                    });
+                  },
+                  child: const Icon(Icons.palette, color: Colors.white),
+                ),
               ),
-              TextButton(onPressed: (){
-                Navigator.push(context, MaterialPageRoute(builder: (context){
-                  return const ImagePage();
-                }));
-              }, child: const Text("ImagePage")),
-              TextButton(onPressed: (){
-                Navigator.push(context, MaterialPageRoute(builder: (context){
-                  return const CheckBoxPage();
-                }));
-              }, child: const Text("CheckBoxPage")),
-              TextButton(onPressed: (){
-                Navigator.push(context, MaterialPageRoute(builder: (context){
-                  return const FormPage();
-                }));
-              }, child: const Text("FormPage")),
-              TextButton(onPressed: (){
-                Navigator.push(context, MaterialPageRoute(builder: (ctx){
-                  return const IndicatorPage();
-                }));
-              }, child: const Text("IndicatorPage")),
-              TextButton(onPressed: (){
-                Navigator.pushNamed(context, "constrained_box");
-              }, child: const Text("ConstrainedBox")),
-              TextButton(onPressed: (){
-                Navigator.pushNamed(context, "column_row_page");
-              }, child: const Text("ColumnAndRowPage")),
-              TextButton(onPressed: (){
-                Navigator.pushNamed(context, "flex_page");
-              }, child: const Text("FlexLayout")),
-              TextButton(onPressed: (){
-                Navigator.pushNamed(context, "wrap_page");
-              }, child: const Text("WrapLayout")),
-              TextButton(onPressed: (){
-                Navigator.pushNamed(context, "stack_page");
-              }, child: const Text("StackLayoutPage")),
-              TextButton(
-                  child: const Text("AlignLayoutPage"),
-                  onPressed: (){
-                    Navigator.pushNamed(context, "align_page");
-                  }
-              ),
-              TextButton(onPressed: (){
-                Navigator.pushNamed(context, "layout_builder_page");
-              }, child: const Text("LayoutBuilderPage")),
-              TextButton(
-                onPressed: (){
-                  Navigator.pushNamed(context, "decorated_box_page");
-                },
-                child: const Text("DecoratedBoxPage"),
-              ),
-              TextButton(onPressed: (){
-                Navigator.pushNamed(context, "container_page");
-              }, child: const Text("ContainerPage")),
-              TextButton(onPressed: (){
-                Navigator.pushNamed(context, "clip_page");
-              }, child: const Text("Clip Page"))
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home),label: "Base"),
-          BottomNavigationBarItem(icon: Icon(Icons.list),label: "Layout"),
-          BottomNavigationBarItem(icon: Icon(Icons.all_inbox),label: "Container"),
-        ],
-      ),
-    ), value: const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent
-    ));
+              value: const SystemUiOverlayStyle(
+                  statusBarColor: Colors.transparent)),
+          onWillPop: () async {
+            if (_lastPress == null ||
+                DateTime.now().difference(_lastPress!) >
+                    const Duration(seconds: 1)) {
+              _lastPress = DateTime.now();
+              ScaffoldMessenger.of(context).clearSnackBars();
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Press Back Again To Exit")));
+              return false;
+            }
+            return true;
+          }),
+    );
   }
 }
